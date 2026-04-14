@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Config {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model BaseModel {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model BaseCapacity {
+  id   Int @id @default(autoincrement())
+  size Int @unique
+}
+
+model BaseBattery {
+  id     Int    @id @default(autoincrement())
+  status String @unique
+}
+
+model BaseColor {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model Accessory {
+  id        String @id @default(uuid())
+  name      String
+  price_usd Float
+}
+
+model IphoneStock {
+  id             String @id @default(uuid())
+  model          String
+  capacity_gb    Int
+  battery_status String
+  color          String
+  price_usd      Float
+}
+
+model TradeInPrice {
+  id             String @id @default(uuid())
+  model          String
+  capacity_gb    Int
+  battery_range  String
+  price_usd      Float
+}
+
+model FinancingCard {
+  card_name   String          @id
+  base_factor Float
+  plans       FinancingPlan[]
+}
+
+model FinancingPlan {
+  id                    String        @id @default(uuid())
+  card_name             String
+  card                  FinancingCard @relation(fields: [card_name], references: [card_name], onDelete: Cascade)
+  installments          Int
+  surcharge_coefficient Float
+}
+
+model ClientGallery {
+  id          String   @id @default(uuid())
+  image_url   String
+  description String?
+  created_at  DateTime @default(now())
+}
+
+model StoreGallery {
+  id          String   @id @default(uuid())
+  image_url   String
+  description String?
+  created_at  DateTime @default(now())
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+}
