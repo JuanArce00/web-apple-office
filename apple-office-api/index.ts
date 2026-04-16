@@ -59,7 +59,16 @@ app.get('/api/data', async (req, res) => {
             { icon: 'RefreshCw', title: 'Plan Canje', desc: 'Dejá tu equipo actual como parte de pago. Lo cotizamos al mejor valor del mercado.' },
             { icon: 'MessageCircleHeart', title: 'Atención Premium', desc: 'Te guiamos y migramos tus datos mientras disfrutás del ambiente.' }
         ];
-        const feature_cards = featureCardsConfig ? JSON.parse(featureCardsConfig.value) : defaultFeatureCards;
+        let feature_cards = defaultFeatureCards;
+
+if (featureCardsConfig) {
+    try {
+        feature_cards = JSON.parse(featureCardsConfig.value);
+    } catch (e) {
+        console.error("Error parsing feature_cards:", e);
+        feature_cards = defaultFeatureCards;
+    }
+}
 
         res.json({
             config: { dollar_value },
