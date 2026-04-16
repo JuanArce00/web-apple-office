@@ -11,32 +11,44 @@ model Config {
   id    Int    @id @default(autoincrement())
   key   String @unique
   value String
+
+  @@map("config")
 }
 
 model BaseModel {
   id   Int    @id @default(autoincrement())
   name String @unique
+
+  @@map("basemodel")
 }
 
 model BaseCapacity {
   id   Int @id @default(autoincrement())
   size Int @unique
+
+  @@map("basecapacity")
 }
 
 model BaseBattery {
   id     Int    @id @default(autoincrement())
   status String @unique
+
+  @@map("basebattery")
 }
 
 model BaseColor {
   id   Int    @id @default(autoincrement())
   name String @unique
+
+  @@map("basecolor")
 }
 
 model Accessory {
   id        String @id @default(uuid())
   name      String
   price_usd Float
+
+  @@map("accessory")
 }
 
 model IphoneStock {
@@ -46,6 +58,8 @@ model IphoneStock {
   battery_status String
   color          String
   price_usd      Float
+
+  @@map("iphonestock")
 }
 
 model TradeInPrice {
@@ -54,12 +68,16 @@ model TradeInPrice {
   capacity_gb    Int
   battery_range  String
   price_usd      Float
+
+  @@map("tradeinprice")
 }
 
 model FinancingCard {
   card_name   String          @id
   base_factor Float
   plans       FinancingPlan[]
+
+  @@map("financingcard")
 }
 
 model FinancingPlan {
@@ -68,6 +86,8 @@ model FinancingPlan {
   card                  FinancingCard @relation(fields: [card_name], references: [card_name], onDelete: Cascade)
   installments          Int
   surcharge_coefficient Float
+
+  @@map("financingplan")
 }
 
 model ClientGallery {
@@ -75,6 +95,8 @@ model ClientGallery {
   image_url   String
   description String?
   created_at  DateTime @default(now())
+
+  @@map("clientgallery")
 }
 
 model StoreGallery {
@@ -82,10 +104,14 @@ model StoreGallery {
   image_url   String
   description String?
   created_at  DateTime @default(now())
+
+  @@map("storegallery")
 }
 
 model User {
   id       String @id @default(uuid())
   username String @unique
   password String
+
+  @@map("user")
 }
