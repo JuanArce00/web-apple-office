@@ -31,45 +31,63 @@ app.use('/uploads', express.static(uploadDir));
 // Main loader for Frontend (Simulator uses this instantly)
 app.get('/api/data', async (req, res) => {
     try {
-        const [
-            configs, models, capacities, batteries, colors, accessories,
-            iphoneStock, tradeInPrices, cards, plans, gallery, storeGallery
-        ] = await Promise.all([
-            prisma.config.findMany(),
-            prisma.baseModel.findMany(),
-            prisma.baseCapacity.findMany(),
-            prisma.baseBattery.findMany(),
-            prisma.baseColor.findMany(),
-            prisma.accessory.findMany(),
-            prisma.iphoneStock.findMany(),
-            prisma.tradeInPrice.findMany(),
-            prisma.financingCard.findMany(),
-            prisma.financingPlan.findMany(),
-            prisma.clientGallery.findMany({ orderBy: { created_at: 'desc' } }),
-            prisma.storeGallery.findMany({ orderBy: { created_at: 'desc' } })
-        ]);
+        // 🔹 Ejecutar queries por separado para detectar cuál rompe
+        const configs = await prisma.config.findMany();
+        const models = await prisma.baseModel.findMany();
+        const capacities = await prisma.baseCapacity.findMany();
+        const batteries = await prisma.baseBattery.findMany();
+        const colors = await prisma.baseColor.findMany();
+        const accessories = await prisma.accessory.findMany();
+        const iphoneStock = await prisma.iphoneStock.findMany();
+        const tradeInPrices = await prisma.tradeInPrice.findMany();
+        const cards = await prisma.financingCard.findMany();
+        const plans = await prisma.financingPlan.findMany();
 
+        let gallery: any[] = [];
+        let storeGallery: any[] = [];
+
+        try {
+            gallery = await prisma.clientGallery.findMany({
+                orderBy: { created_at: 'desc' }
+            });
+        } catch (e) {
+            console.error("❌ Error gallery:", e);
+        }
+
+        try {
+            storeGallery = await prisma.storeGallery.findMany({
+                orderBy: { created_at: 'desc' }
+            });
+        } catch (e) {
+            console.error("❌ Error storeGallery:", e);
+        }
+
+        // 🔹 Config dólar
         const dollarValConfig = configs.find(c => c.key === 'dollar_value');
         const dollar_value = dollarValConfig ? Number(dollarValConfig.value) : 1000;
 
-        const featureCardsConfig = configs.find(c => c.key === 'feature_cards');
+        // 🔹 Feature cards (PROTEGIDO)
         const defaultFeatureCards = [
-            { icon: 'Package', title: 'Equipos Nuevos', desc: 'Sellados en caja, directo de fábrica. Con la seguridad de un unpacked genuino.' },
-            { icon: 'ShieldCheck', title: 'Garantía Oficial', desc: 'Dormí tranquilo. Tenés 12 meses de garantía directa de Apple internacional.' },
-            { icon: 'RefreshCw', title: 'Plan Canje', desc: 'Dejá tu equipo actual como parte de pago. Lo cotizamos al mejor valor del mercado.' },
-            { icon: 'MessageCircleHeart', title: 'Atención Premium', desc: 'Te guiamos y migramos tus datos mientras disfrutás del ambiente.' }
+            { icon: 'Package', title: 'Equipos Nuevos', desc: 'Sellados en caja, directo de fábrica.' },
+            { icon: 'ShieldCheck', title: 'Garantía Oficial', desc: '12 meses de garantía Apple.' },
+            { icon: 'RefreshCw', title: 'Plan Canje', desc: 'Dejá tu equipo como parte de pago.' },
+            { icon: 'MessageCircleHeart', title: 'Atención Premium', desc: 'Te guiamos en todo el proceso.' }
         ];
+
         let feature_cards = defaultFeatureCards;
 
-if (featureCardsConfig) {
-    try {
-        feature_cards = JSON.parse(featureCardsConfig.value);
-    } catch (e) {
-        console.error("Error parsing feature_cards:", e);
-        feature_cards = defaultFeatureCards;
-    }
-}
+        const featureCardsConfig = configs.find(c => c.key === 'feature_cards');
 
+        if (featureCardsConfig && featureCardsConfig.value) {
+            try {
+                feature_cards = JSON.parse(featureCardsConfig.value);
+            } catch (e) {
+                console.error("❌ Error parsing feature_cards:", featureCardsConfig.value);
+                feature_cards = defaultFeatureCards;
+            }
+        }
+
+        // 🔹 RESPUESTA FINAL
         res.json({
             config: { dollar_value },
             feature_cards,
@@ -85,7 +103,9 @@ if (featureCardsConfig) {
             gallery,
             storeGallery
         });
+
     } catch (err) {
+        console.error("🔥 ERROR GENERAL /api/data:", err);
         res.status(500).json({ error: 'Failed fetching data' });
     }
 });
