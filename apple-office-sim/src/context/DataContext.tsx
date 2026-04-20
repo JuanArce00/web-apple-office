@@ -13,15 +13,18 @@ export type AppData = {
     models: string[];
     capacities: number[];
     batteries: string[];
-    colors: string[];
     accessories: Array<{ id: string, name: string, price_usd: number }>;
-    iphoneStock: Array<{ id: string, model: string, capacity_gb: number, battery_status: string, color: string, price_usd: number }>;
+    iphoneStock: Array<{ id: string, model: string, capacity_gb: number, battery_status: string, price_usd: number }>;
     tradeInPrices: Array<{ id: string, model: string, capacity_gb: number, battery_range: string, price_usd: number }>;
     cards: Array<{ card_name: string, base_factor: number }>;
     plans: Array<{ id: string, card_name: string, installments: number, surcharge_coefficient: number }>;
     gallery: Array<{ id: string, image_url: string, description: string, created_at: string }>;
     storeGallery: Array<{ id: string, image_url: string, description: string, created_at: string }>;
+    landingIphones: Array<{ id: string, name: string, price_string: string, image_url: string, order_index: number }>;
+    landingAccessories: Array<{ id: string, name: string, price_string: string, image_url: string, order_index: number }>;
+    faqs: Array<{ id: string, question: string, answer: string, order: number }>;
 };
+
 
 const DEFAULT_FEATURE_CARDS: FeatureCard[] = [
     { icon: 'Package', title: 'Equipos Nuevos', desc: 'Sellados en caja, directo de fábrica. Con la seguridad de un unpacked genuino.' },
@@ -33,9 +36,10 @@ const DEFAULT_FEATURE_CARDS: FeatureCard[] = [
 const defaultData: AppData = {
     config: { dollar_value: 1000 },
     feature_cards: DEFAULT_FEATURE_CARDS,
-    models: [], capacities: [], batteries: [], colors: [],
-    accessories: [], iphoneStock: [], tradeInPrices: [], cards: [], plans: [], gallery: [], storeGallery: []
+    models: [], capacities: [], batteries: [],
+    accessories: [], iphoneStock: [], tradeInPrices: [], cards: [], plans: [], gallery: [], storeGallery: [], landingIphones: [], landingAccessories: [], faqs: []
 };
+
 
 type DataContextType = {
     data: AppData;
@@ -49,7 +53,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshData = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/data');
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${API_URL}/api/data`);
             const json = await res.json();
             setData({
                 ...json,

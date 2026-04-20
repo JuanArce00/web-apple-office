@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Trash2, Plus, Save, Lock, Users, LogIn } from 'lucide-react';
+import { Trash2, Plus, Save, Lock, Users, LogIn, HelpCircle } from 'lucide-react';
+
 import Login from './Login';
 
-const API_URL = 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = `${BASE_URL}/api`;
 
 function getToken(): string | null {
     return localStorage.getItem('apple_admin_token');
@@ -22,6 +24,7 @@ export default function AdminPanel() {
     const [token, setToken] = useState<string | null>(() => localStorage.getItem('apple_admin_token'));
     const [username, setUsername] = useState<string | null>(() => localStorage.getItem('apple_admin_username'));
     const [activeTab, setActiveTab] = useState('base');
+
 
     const handleLogin = (newToken: string, newUsername: string) => {
         localStorage.setItem('apple_admin_token', newToken);
@@ -67,8 +70,12 @@ export default function AdminPanel() {
         { id: 'finance', label: 'Financiación' },
         { id: 'gallery', label: 'Galería Clientes' },
         { id: 'store', label: '🏗️ Local' },
+        { id: 'iphones', label: '📱 iPhones' },
+        { id: 'accessories', label: '🎧 Accesorios' },
+        { id: 'faqs', label: '❓ FAQs' },
         { id: 'users', label: '👤 Usuarios' },
     ];
+
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -112,8 +119,12 @@ export default function AdminPanel() {
             {activeTab === 'finance' && <AdminFinance />}
             {activeTab === 'gallery' && <AdminGallery />}
             {activeTab === 'store' && <AdminStoreGallery />}
+            { activeTab === 'iphones' && <AdminLandingIphones /> }
+            {activeTab === 'accessories' && <AdminLandingAccessories />}
+            {activeTab === 'faqs' && <AdminFaqs />}
             {activeTab === 'users' && <AdminUsers currentUsername={username || ''} />}
         </div>
+
     );
 }
 
@@ -143,7 +154,9 @@ function AdminBase() {
                 body: JSON.stringify({ value: p })
             });
             await refreshData();
-        } catch (e) { }
+        } catch (e) { 
+            alert("Error al guardar entidad base. Revisa la consola o los permisos.");
+        }
     };
 
     const removeBase = async (entity: string, val: any) => {
@@ -177,7 +190,6 @@ function AdminBase() {
             <ListEditor title="Modelos" items={data.models} onAdd={() => addBase('model', 'Nombre del modelo:')} onRemove={(v) => removeBase('model', v)} />
             <ListEditor title="Capacidades (GB)" items={data.capacities} onAdd={() => addBase('capacity', 'Capacidad en GB:')} onRemove={(v) => removeBase('capacity', v)} />
             <ListEditor title="Baterías" items={data.batteries} onAdd={() => addBase('battery', 'Estado de Batería:')} onRemove={(v) => removeBase('battery', v)} />
-            <ListEditor title="Colores" items={data.colors} onAdd={() => addBase('color', 'Color:')} onRemove={(v) => removeBase('color', v)} />
         </div>
     );
 }
@@ -209,15 +221,20 @@ function AdminStock() {
     const [model, setModel] = useState(data.models[0] || "");
     const [cap, setCap] = useState(data.capacities[0] || 0);
     const [bat, setBat] = useState(data.batteries[0] || "");
-    const [col, setCol] = useState(data.colors[0] || "");
     const [price, setPrice] = useState(0);
 
+    useEffect(() => {
+        if (!model && data.models.length > 0) setModel(data.models[0]);
+        if (cap === 0 && data.capacities.length > 0) setCap(data.capacities[0]);
+        if (!bat && data.batteries.length > 0) setBat(data.batteries[0]);
+    }, [data.models, data.capacities, data.batteries]);
+
     const handleAdd = async () => {
-        if (!model || !cap || !bat || !col || !price) return alert("Completa todos los campos");
+        if (!model || cap === 0 || !bat || price === 0) return alert("Completa todos los campos con valores válidos");
         await fetch(`${API_URL}/stock`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ model, capacity_gb: cap, battery_status: bat, color: col, price_usd: price })
+            body: JSON.stringify({ model, capacity_gb: cap, battery_status: bat, price_usd: price })
         });
         await refreshData();
         alert("Stock agregado a la base de datos");
@@ -245,10 +262,6 @@ function AdminStock() {
                         <option value="">Seleccionar Batería...</option>
                         {data.batteries.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
-                    <select value={col} onChange={e => setCol(e.target.value)} className="border p-2 rounded w-full">
-                        <option value="">Seleccionar Color...</option>
-                        {data.colors.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
                     <div className="mt-2">
                         <label className="text-xs text-gray-500">Precio de Venta (USD)</label>
                         <input type="number" value={price === 0 ? '' : price} onChange={e => setPrice(Number(e.target.value))} className="border p-2 rounded w-full" placeholder="Ej: 1100" />
@@ -264,7 +277,7 @@ function AdminStock() {
                     {data.iphoneStock.map(s => (
                         <div key={s.id} className="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50">
                             <div>
-                                <span className="font-semibold">{s.model} {s.capacity_gb}GB</span> - {s.color} - <span className="text-sm font-medium text-blue-600 px-2 py-1 bg-blue-50 rounded">{s.battery_status}</span>
+                                <span className="font-semibold">{s.model} {s.capacity_gb}GB</span> - <span className="text-sm font-medium text-blue-600 px-2 py-1 bg-blue-50 rounded">{s.battery_status}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="text-right">
@@ -289,8 +302,14 @@ function AdminTradeIn() {
     const [bat, setBat] = useState(data.batteries[0] || "");
     const [price, setPrice] = useState(0);
 
+    useEffect(() => {
+        if (!model && data.models.length > 0) setModel(data.models[0]);
+        if (cap === 0 && data.capacities.length > 0) setCap(data.capacities[0]);
+        if (!bat && data.batteries.length > 0) setBat(data.batteries[0]);
+    }, [data.models, data.capacities, data.batteries]);
+
     const handleAdd = async () => {
-        if (!model || !cap || !bat || !price) return alert("Completa todos los campos");
+        if (!model || cap === 0 || !bat || price === 0) return alert("Completa todos los campos con valores válidos");
         await fetch(`${API_URL}/tradein`, {
             method: 'POST',
             headers: authHeaders(),
@@ -518,7 +537,7 @@ function AdminGallery() {
                     {data.gallery?.map(g => (
                         <div key={g.id} className="border rounded-xl overflow-hidden shadow-sm flex flex-col">
                             <div className="h-48 bg-gray-100 relative">
-                                <img src={`http://localhost:3000${g.image_url}`} alt={g.description} className="w-full h-full object-cover" />
+                                <img src={`${BASE_URL}${g.image_url}`} alt={g.description} className="w-full h-full object-cover" />
                             </div>
                             <div className="p-3 bg-white flex flex-col flex-1 justify-between">
                                 <p className="text-sm text-gray-700 italic mb-3">"{g.description}"</p>
@@ -870,7 +889,7 @@ function AdminStoreGallery() {
                 {(data.storeGallery ?? []).map(item => (
                     <div key={item.id} className="bg-white rounded-2xl overflow-hidden border shadow-sm group relative">
                         <img
-                            src={`http://localhost:3000${item.image_url}`}
+                            src={`${BASE_URL}${item.image_url}`}
                             alt={item.description || 'Local'}
                             className="w-full aspect-[3/4] object-cover"
                         />
@@ -892,3 +911,436 @@ function AdminStoreGallery() {
         </div>
     );
 }
+
+// ─── Landing Iphones Management ────────────────────────────────────────────────
+
+function AdminLandingIphones() {
+    const { data, refreshData } = useData();
+    const [name, setName] = useState('');
+    const [price, setPrice] = useState('');
+    const [order, setOrder] = useState(0);
+    const [file, setFile] = useState<File | null>(null);
+    const [loading, setLoading] = useState(false);
+    const fileRef = React.useRef<HTMLInputElement>(null);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!file && !name) return;
+        setLoading(true);
+        const formData = new FormData();
+        if (file) formData.append('image', file);
+        formData.append('name', name);
+        formData.append('price_string', price);
+        formData.append('order_index', String(order));
+
+        try {
+            await fetch(`${API_URL}/landing-iphones`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('apple_admin_token')}` },
+                body: formData
+            });
+            setName('');
+            setPrice('');
+            setOrder(0);
+            setFile(null);
+            if (fileRef.current) fileRef.current.value = '';
+            await refreshData();
+        } catch {
+            alert('Error al guardar el iPhone.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Eliminar este iPhone de la landing?')) return;
+        await fetch(`${API_URL}/landing-iphones/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        await refreshData();
+    };
+
+    return (
+        <div className="flex flex-col gap-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 className="text-xl font-bold mb-1">Catálogo de iPhones (Landing)</h2>
+                <p className="text-gray-500 text-sm mb-6">Gestioná los modelos que aparecen en la sección destacada de la página principal.</p>
+                <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Modelo / Nombre</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: iPhone 17 Pro"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                            required
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Precio (Texto)</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Desde $799.999"
+                            value={price}
+                            onChange={e => setPrice(e.target.value)}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                            required
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Orden</label>
+                        <input
+                            type="number"
+                            value={order}
+                            onChange={e => setOrder(Number(e.target.value))}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-3">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Imagen del Producto</label>
+                        <input
+                            ref={fileRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setFile(e.target.files?.[0] ?? null)}
+                            className="border rounded-xl px-3 py-2 text-sm w-full"
+                            required
+                        />
+                    </div>
+                    <div className="flex items-end md:col-span-1">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-black text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {loading ? 'Guardando...' : 'Agregar iPhone'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {(data.landingIphones ?? []).map(item => (
+                    <div key={item.id} className="bg-white rounded-[2rem] overflow-hidden border shadow-sm group relative flex flex-col">
+                        <div className="aspect-square bg-[#f5f5f7] p-8 flex items-center justify-center">
+                            <img
+                                src={`${BASE_URL}${item.image_url}`}
+                                alt={item.name}
+                                className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                            />
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col items-center text-center">
+                            <span className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Orden: {item.order_index}</span>
+                            <h4 className="font-bold text-lg mb-1">{item.name}</h4>
+                            <p className="text-gray-500 text-sm font-medium">{item.price_string}</p>
+                        </div>
+                        <button
+                            onClick={() => handleDelete(item.id)}
+                            className="absolute top-4 right-4 bg-white/80 backdrop-blur-md text-red-500 p-2 rounded-full shadow-md hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+                {(data.landingIphones ?? []).length === 0 && (
+                    <p className="text-gray-400 text-sm col-span-full text-center py-12 bg-gray-50 rounded-[2rem] border border-dashed">No hay iPhones cargados para la landing.</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─── Landing Accessories Management ────────────────────────────────────────────
+
+function AdminLandingAccessories() {
+    const { data, refreshData } = useData();
+    const [name, setName] = useState('');
+    const [price, setPrice] = useState('');
+    const [order, setOrder] = useState(0);
+    const [file, setFile] = useState<File | null>(null);
+    const [loading, setLoading] = useState(false);
+    const fileRef = React.useRef<HTMLInputElement>(null);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!file && !name) return;
+        setLoading(true);
+        const formData = new FormData();
+        if (file) formData.append('image', file);
+        formData.append('name', name);
+        formData.append('price_string', price);
+        formData.append('order_index', String(order));
+
+        try {
+            await fetch(`${API_URL}/landing-accessories`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('apple_admin_token')}` },
+                body: formData
+            });
+            setName('');
+            setPrice('');
+            setOrder(0);
+            setFile(null);
+            if (fileRef.current) fileRef.current.value = '';
+            await refreshData();
+        } catch {
+            alert('Error al guardar el accesorio.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Eliminar este accesorio de la landing?')) return;
+        await fetch(`${API_URL}/landing-accessories/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        await refreshData();
+    };
+
+    return (
+        <div className="flex flex-col gap-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 className="text-xl font-bold mb-1">Catálogo de Accesorios (Landing)</h2>
+                <p className="text-gray-500 text-sm mb-6">Gestioná los modelos que aparecen en la sección destacada de accesorios de la página principal.</p>
+                <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Modelo / Nombre</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: AirPods Pro"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                            required
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Precio (Texto)</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Desde $299.999"
+                            value={price}
+                            onChange={e => setPrice(e.target.value)}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                            required
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Orden</label>
+                        <input
+                            type="number"
+                            value={order}
+                            onChange={e => setOrder(Number(e.target.value))}
+                            className="border rounded-xl px-3 py-2.5 text-sm"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-3">
+                        <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Imagen del Producto</label>
+                        <input
+                            ref={fileRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setFile(e.target.files?.[0] ?? null)}
+                            className="border rounded-xl px-3 py-2 text-sm w-full"
+                            required
+                        />
+                    </div>
+                    <div className="flex items-end md:col-span-1">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-black text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {loading ? 'Guardando...' : 'Agregar Accesorio'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {(data.landingAccessories ?? []).map(item => (
+                    <div key={item.id} className="bg-white rounded-[2rem] overflow-hidden border shadow-sm group relative flex flex-col">
+                        <div className="aspect-square bg-[#f5f5f7] p-8 flex items-center justify-center">
+                            <img
+                                src={`${BASE_URL}${item.image_url}`}
+                                alt={item.name}
+                                className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                            />
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col items-center text-center">
+                            <span className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Orden: {item.order_index}</span>
+                            <h4 className="font-bold text-lg mb-1">{item.name}</h4>
+                            <p className="text-gray-500 text-sm font-medium">{item.price_string}</p>
+                        </div>
+                        <button
+                            onClick={() => handleDelete(item.id)}
+                            className="absolute top-4 right-4 bg-white/80 backdrop-blur-md text-red-500 p-2 rounded-full shadow-md hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+                {(data.landingAccessories ?? []).length === 0 && (
+                    <p className="text-gray-400 text-sm col-span-full text-center py-12 bg-gray-50 rounded-[2rem] border border-dashed">No hay accesorios cargados para la landing.</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─── FAQ Management ────────────────────────────────────────────────────────────
+
+function AdminFaqs() {
+    const { data, refreshData } = useData();
+    const [question, setQuestion] = useState('');
+    const [answer, setAnswer] = useState('');
+    const [order, setOrder] = useState(0);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!question || !answer) return;
+        setLoading(true);
+        const payload = { question, answer, order: Number(order) };
+        const url = editingId ? `${API_URL}/faqs/${editingId}` : `${API_URL}/faqs`;
+        const method = editingId ? 'PUT' : 'POST';
+
+        try {
+            await fetch(url, {
+                method,
+                headers: authHeaders(),
+                body: JSON.stringify(payload)
+            });
+            setQuestion('');
+            setAnswer('');
+            setOrder(0);
+            setEditingId(null);
+            await refreshData();
+        } catch {
+            alert('Error al guardar la FAQ.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEdit = (faqi: any) => {
+        setEditingId(faqi.id);
+        setQuestion(faqi.question);
+        setAnswer(faqi.answer);
+        setOrder(faqi.order);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Eliminar esta pregunta frecuente?')) return;
+        await fetch(`${API_URL}/faqs/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        await refreshData();
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-4 self-start">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-9 h-9 bg-black text-white rounded-full flex items-center justify-center">
+                        <HelpCircle className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-semibold text-lg">{editingId ? 'Editar FAQ' : 'Nueva FAQ'}</h3>
+                </div>
+                <form onSubmit={handleSave} className="flex flex-col gap-3">
+                    <div>
+                        <label className="text-xs text-gray-500 block mb-1">Pregunta</label>
+                        <input
+                            type="text"
+                            value={question}
+                            onChange={e => setQuestion(e.target.value)}
+                            className="border p-2.5 rounded-xl w-full text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            placeholder="¿Cuál es la garantía?"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 block mb-1">Respuesta</label>
+                        <textarea
+                            value={answer}
+                            onChange={e => setAnswer(e.target.value)}
+                            className="border p-2.5 rounded-xl w-full text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            rows={4}
+                            placeholder="La garantía es de 12 meses..."
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 block mb-1">Orden</label>
+                        <input
+                            type="number"
+                            value={order}
+                            onChange={e => setOrder(Number(e.target.value))}
+                            className="border p-2.5 rounded-xl w-full text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="mt-2 w-full bg-black text-white p-2.5 text-sm rounded-xl hover:bg-gray-900 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        <Save className="w-4 h-4" />
+                        {loading ? 'Guardando...' : editingId ? 'Actualizar FAQ' : 'Agregar FAQ'}
+                    </button>
+                    {editingId && (
+                        <button
+                            type="button"
+                            onClick={() => { setEditingId(null); setQuestion(''); setAnswer(''); setOrder(0); }}
+                            className="text-gray-500 text-xs hover:underline mt-1"
+                        >
+                            Cancelar edición
+                        </button>
+                    )}
+                </form>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-8">
+                <h3 className="font-semibold text-lg mb-4">Listado de Preguntas Frecuentes</h3>
+                <div className="flex flex-col gap-4">
+                    {(data.faqs ?? []).map(f => (
+                        <div key={f.id} className="p-4 border rounded-xl bg-gray-50 flex justify-between gap-4 group hover:bg-white transition-colors">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="bg-white px-2 py-0.5 rounded text-[10px] font-bold border text-gray-500">Pos: {f.order}</span>
+                                    <h4 className="font-bold text-gray-900">{f.question}</h4>
+                                </div>
+                                <p className="text-sm text-gray-600 font-medium">{f.answer}</p>
+                            </div>
+                            <div className="flex flex-col gap-2 items-end">
+                                <button
+                                    onClick={() => handleEdit(f)}
+                                    className="text-blue-600 hover:text-blue-800 text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                    Editar
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(f.id)}
+                                    className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.faqs?.length === 0) && (
+                        <p className="text-gray-400 text-center py-12 border border-dashed rounded-2xl">No hay preguntas frecuentes cargadas.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+

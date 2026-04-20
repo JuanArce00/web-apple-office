@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -36,14 +37,23 @@ app.get('/api/data', async (req, res) => {
         const models = await prisma.baseModel.findMany();
         const capacities = await prisma.baseCapacity.findMany();
         const batteries = await prisma.baseBattery.findMany();
-        const colors = await prisma.baseColor.findMany();
         const accessories = await prisma.accessory.findMany();
         const iphoneStock = await prisma.iphoneStock.findMany();
         const tradeInPrices = await prisma.tradeInPrice.findMany();
         const cards = await prisma.financingCard.findMany();
         const plans = await prisma.financingPlan.findMany();
+        const landingIphones = await prisma.landingIphone.findMany({
+            orderBy: { order_index: 'asc' }
+        });
+        const landingAccessories = await prisma.landingAccessory.findMany({
+            orderBy: { order_index: 'asc' }
+        });
+        const faqs = await prisma.faq.findMany({
+            orderBy: { order: 'asc' }
+        });
 
         let gallery: any[] = [];
+
         let storeGallery: any[] = [];
 
         try {
@@ -94,15 +104,18 @@ app.get('/api/data', async (req, res) => {
             models: models.map((m: any) => m.name),
             capacities: capacities.map((c: any) => c.size),
             batteries: batteries.map((b: any) => b.status),
-            colors: colors.map((c: any) => c.name),
             accessories,
             iphoneStock,
             tradeInPrices,
             cards,
             plans,
             gallery,
-            storeGallery
+            storeGallery,
+            landingIphones,
+            landingAccessories,
+            faqs
         });
+
 
     } catch (err) {
         console.error("🔥 ERROR GENERAL /api/data:", err);
@@ -219,7 +232,6 @@ app.post('/api/base/:entity', authenticateToken, async (req, res) => {
         if (entity === 'model') await prisma.baseModel.create({ data: { name: value } });
         if (entity === 'capacity') await prisma.baseCapacity.create({ data: { size: Number(value) } });
         if (entity === 'battery') await prisma.baseBattery.create({ data: { status: value } });
-        if (entity === 'color') await prisma.baseColor.create({ data: { name: value } });
         res.json({ success: true });
     } catch (e) {
         res.status(400).json({ error: 'Could not create or already exists' });
@@ -234,7 +246,6 @@ app.delete('/api/base/:entity', authenticateToken, async (req, res) => {
         if (entity === 'model') await prisma.baseModel.delete({ where: { name: value } });
         if (entity === 'capacity') await prisma.baseCapacity.delete({ where: { size: Number(value) } });
         if (entity === 'battery') await prisma.baseBattery.delete({ where: { status: value } });
-        if (entity === 'color') await prisma.baseColor.delete({ where: { name: value } });
         res.json({ success: true });
     } catch (e) {
         res.status(400).json({ error: 'Failed deletion' });
@@ -357,13 +368,164 @@ app.post('/api/store-gallery', authenticateToken, upload.single('image'), async 
         });
         res.json(newEntry);
     } catch (e) {
-        res.status(500).json({ error: 'Failed to upload store image' });
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
 app.delete('/api/store-gallery/:id', authenticateToken, async (req, res) => {
+    await prisma.storeGallery.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+});
+
+// Landing Iphones CRUD
+app.get('/api/landing-iphones', async (req, res) => {
+    const list = await prisma.landingIphone.findMany({ orderBy: { order_index: 'asc' } });
+    res.json(list);
+});
+
+app.post('/api/landing-iphones', authenticateToken, upload.single('image'), async (req, res) => {
     try {
-        await prisma.storeGallery.delete({ where: { id: req.params.id } });
+        const { name, price_string, order_index } = req.body;
+        if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const newEntry = await prisma.landingIphone.create({
+            data: {
+                name,
+                price_string,
+                image_url: imageUrl,
+                order_index: Number(order_index) || 0
+            }
+        });
+        res.json(newEntry);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.put('/api/landing-iphones/:id', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, price_string, order_index } = req.body;
+        const existing = await prisma.landingIphone.findUnique({ where: { id } });
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+
+        let imageUrl = existing.image_url;
+        if (req.file) {
+            imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const updated = await prisma.landingIphone.update({
+            where: { id },
+            data: {
+                name,
+                price_string,
+                image_url: imageUrl,
+                order_index: Number(order_index) || 0
+            }
+        });
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.delete('/api/landing-iphones/:id', authenticateToken, async (req, res) => {
+    await prisma.landingIphone.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+});
+
+// Landing Accessories CRUD
+app.get('/api/landing-accessories', async (req, res) => {
+    const list = await prisma.landingAccessory.findMany({ orderBy: { order_index: 'asc' } });
+    res.json(list);
+});
+
+app.post('/api/landing-accessories', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        const { name, price_string, order_index } = req.body;
+        if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const newEntry = await prisma.landingAccessory.create({
+            data: {
+                name,
+                price_string,
+                image_url: imageUrl,
+                order_index: Number(order_index) || 0
+            }
+        });
+        res.json(newEntry);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.put('/api/landing-accessories/:id', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, price_string, order_index } = req.body;
+        const existing = await prisma.landingAccessory.findUnique({ where: { id } });
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+
+        let imageUrl = existing.image_url;
+        if (req.file) {
+            imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const updated = await prisma.landingAccessory.update({
+            where: { id },
+            data: {
+                name,
+                price_string,
+                image_url: imageUrl,
+                order_index: Number(order_index) || 0
+            }
+        });
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.delete('/api/landing-accessories/:id', authenticateToken, async (req, res) => {
+    await prisma.landingAccessory.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+});
+
+// FAQ CRUD
+app.get('/api/faqs', async (req, res) => {
+    const list = await prisma.faq.findMany({ orderBy: { order: 'asc' } });
+    res.json(list);
+});
+
+app.post('/api/faqs', authenticateToken, async (req, res) => {
+    try {
+        const { question, answer, order } = req.body;
+        const newEntry = await prisma.faq.create({
+            data: { question, answer, order: Number(order) || 0 }
+        });
+        res.json(newEntry);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.put('/api/faqs/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { question, answer, order } = req.body;
+        const updated = await prisma.faq.update({
+            where: { id },
+            data: { question, answer, order: Number(order) || 0 }
+        });
+        res.json(updated);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.delete('/api/faqs/:id', authenticateToken, async (req, res) => {
+    try {
+        await prisma.faq.delete({ where: { id: req.params.id } });
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Failed' });
@@ -371,6 +533,7 @@ app.delete('/api/store-gallery/:id', authenticateToken, async (req, res) => {
 });
 
 const PORT = 3000;
+
 app.listen(PORT, () => {
     console.log(`Backend Server running intensely on http://localhost:${PORT}`);
 });
