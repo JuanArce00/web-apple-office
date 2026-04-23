@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { ShoppingCart, Calculator, ArrowRight, CheckCircle2, Smartphone, HelpCircle } from 'lucide-react';
 
@@ -24,6 +24,17 @@ export default function SimulationPanel() {
     const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isModalOpen]);
 
     // --- DERIVED DATA ---
     const matchedIphone = useMemo(() => {
@@ -434,103 +445,105 @@ export default function SimulationPanel() {
             {/* MODAL DE ÉXITO */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl">
-                    <div className="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl animate-in zoom-in duration-300 border border-white/20">
-                        <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg"><CheckCircle2 className="w-12 h-12" /></div>
-                        <h2 className="text-3xl font-black text-center mb-10 text-gray-900">¡Cotización Lista!</h2>
-                        <div className="bg-gray-50 p-6 rounded-[2rem] flex flex-col gap-5 mb-8">
-                            {/* NUEVO EQUIPO */}
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Nuevo Equipo</span>
-                                <div className="flex justify-between items-center text-gray-900">
-                                    <span className="font-extrabold text-lg">{selectedModel} {selectedCapacity}GB</span>
-                                    <span className="font-black">AR$ {subtotalIphoneARS.toLocaleString()}</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-gray-400">Bateria {selectedBattery}</span>
-                            </div>
-
-                            <div className="h-px bg-gray-200"></div>
-
-                            {/* CANJE (Si existe) */}
-                            {contribTradeInARS > 0 && (
+                    <div className="bg-white rounded-[3rem] max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in duration-300 border border-white/20">
+                        <div className="overflow-y-auto p-10 custom-scrollbar flex-1">
+                            <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg"><CheckCircle2 className="w-12 h-12" /></div>
+                            <h2 className="text-3xl font-black text-center mb-10 text-gray-900">¡Cotización Lista!</h2>
+                            <div className="bg-gray-50 p-6 rounded-[2rem] flex flex-col gap-5 mb-8">
+                                {/* NUEVO EQUIPO */}
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Entregás (Canje)</span>
-                                    <div className="flex justify-between items-center text-gray-600 font-bold">
-                                        <span>{tradeInModel} {tradeInCapacity}GB</span>
-                                        <span>- AR$ {contribTradeInARS.toLocaleString()}</span>
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Nuevo Equipo</span>
+                                    <div className="flex justify-between items-center text-gray-900">
+                                        <span className="font-extrabold text-lg">{selectedModel} {selectedCapacity}GB</span>
+                                        <span className="font-black">AR$ {subtotalIphoneARS.toLocaleString()}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-gray-400">Bateria {tradeInBattery}</span>
+                                    <span className="text-[10px] font-bold text-gray-400">Bateria {selectedBattery}</span>
                                 </div>
-                            )}
 
-                            {/* PAGOS */}
-                            <div className="flex flex-col gap-2 pt-2 border-t border-dashed border-gray-300">
-                                {contribCashARS > 0 && (
-                                    <div className="flex justify-between text-sm font-bold text-gray-600 italic">
-                                        <span>Entrega en Efectivo</span>
-                                        <span>- AR$ {contribCashARS.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {contribCardARS > 0 && (
+                                <div className="h-px bg-gray-200"></div>
+
+                                {/* CANJE (Si existe) */}
+                                {contribTradeInARS > 0 && (
                                     <div className="flex flex-col gap-1">
-                                        <div className="flex justify-between text-sm font-black text-emerald-600">
-                                            <span>Financiado con {selectedCard}</span>
-                                            <span>{selectedInstallments}x AR$ {Math.round(monthlyInstallmentARS).toLocaleString()}</span>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Entregás (Canje)</span>
+                                        <div className="flex justify-between items-center text-gray-600 font-bold">
+                                            <span>{tradeInModel} {tradeInCapacity}GB</span>
+                                            <span>- AR$ {contribTradeInARS.toLocaleString()}</span>
                                         </div>
-                                        <span className="text-[9px] font-bold text-gray-400 text-right uppercase">Total financiado: AR$ {Math.round(finalFinancedTotalARS).toLocaleString()}</span>
+                                        <span className="text-[10px] font-bold text-gray-400">Bateria {tradeInBattery}</span>
                                     </div>
                                 )}
-                            </div>
-                        </div>
 
-                        {/* GIFT SECTION */}
-                        <div className="mb-10 animate-bounce-subtle">
-                            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-[2px] rounded-3xl shadow-lg shadow-emerald-500/20">
-                                <div className="bg-white rounded-[calc(1.5rem-2px)] p-6 text-center">
-                                    <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full mb-4">
-                                        <ShoppingCart className="w-6 h-6" />
+                                {/* PAGOS */}
+                                <div className="flex flex-col gap-2 pt-2 border-t border-dashed border-gray-300">
+                                    {contribCashARS > 0 && (
+                                        <div className="flex justify-between text-sm font-bold text-gray-600 italic">
+                                            <span>Entrega en Efectivo</span>
+                                            <span>- AR$ {contribCashARS.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {contribCardARS > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex justify-between text-sm font-black text-emerald-600">
+                                                <span>Financiado con {selectedCard}</span>
+                                                <span>{selectedInstallments}x AR$ {Math.round(monthlyInstallmentARS).toLocaleString()}</span>
+                                            </div>
+                                            <span className="text-[9px] font-bold text-gray-400 text-right uppercase">Total financiado: AR$ {Math.round(finalFinancedTotalARS).toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* GIFT SECTION */}
+                            <div className="mb-10 animate-bounce-subtle">
+                                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-[2px] rounded-3xl shadow-lg shadow-emerald-500/20">
+                                    <div className="bg-white rounded-[calc(1.5rem-2px)] p-6 text-center">
+                                        <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full mb-4">
+                                            <ShoppingCart className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-gray-900 mb-2 leading-tight tracking-tight">¡TENEMOS UN REGALO PARA VOS!</h3>
+                                        <p className="text-gray-600 font-bold text-sm leading-relaxed px-2">
+                                            Con tu compra, te regalamos {hasTradeIn ? '' : <span className="text-emerald-600">Cargador, </span>}
+                                            cable, funda y film blindado!
+                                        </p>
                                     </div>
-                                    <h3 className="text-xl font-black text-gray-900 mb-2 leading-tight tracking-tight">¡TENEMOS UN REGALO PARA VOS!</h3>
-                                    <p className="text-gray-600 font-bold text-sm leading-relaxed px-2">
-                                        Con tu compra, te regalamos {hasTradeIn ? '' : <span className="text-emerald-600">Cargador, </span>}
-                                        cable, funda y film blindado!
-                                    </p>
                                 </div>
                             </div>
+
+                            {/* WHATSAPP CTA (NEW) */}
+                            {(() => {
+                                const message = `¡Hola Apple Office! Acabo de realizar una cotización en la web y me interesa concretar la compra:
+
+*NUEVO EQUIPO:* ${selectedModel} ${selectedCapacity}GB
+*Salud:* ${selectedBattery}
+*Valor:* AR$ ${subtotalIphoneARS.toLocaleString()}
+
+${contribTradeInARS > 0 ? `*ENTREGO COMO CANJE:* ${tradeInModel} ${tradeInCapacity}GB (${tradeInBattery}) por AR$ ${contribTradeInARS.toLocaleString()}` : '*SIN CANJE*'}
+
+*ENTREGA EFECTIVO:* AR$ ${contribCashARS.toLocaleString()}
+${contribCardARS > 0 ? `*FINANCIACIÓN:* ${selectedInstallments} cuotas con ${selectedCard} (Cuota: AR$ ${Math.round(monthlyInstallmentARS).toLocaleString()})` : '*TOTAL CUBIERTO*'}
+
+¿Me podrían confirmar disponibilidad y los pasos a seguir? ¡Gracias!`;
+                                const whatsappUrl = `https://wa.me/5493855953712?text=${encodeURIComponent(message)}`;
+                                
+                                return (
+                                    <div className="flex flex-col gap-3">
+                                        <a 
+                                            href={whatsappUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="w-full bg-[#25D366] text-white font-black text-xl py-6 rounded-[1.5rem] hover:bg-[#128C7E] active:scale-95 shadow-xl transition-all flex items-center justify-center gap-3"
+                                        >
+                                            <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                            </svg>
+                                            Continuar por WhatsApp
+                                        </a>
+                                        <button onClick={resetAll} className="w-full text-gray-400 font-bold text-sm py-4 hover:text-black transition-all">Hacer otra cotización</button>
+                                    </div>
+                                );
+                            })()}
                         </div>
-
-                        {/* WHATSAPP CTA (NEW) */}
-                        {(() => {
-                            const message = `¡Hola Apple Office! 👋 Acabo de realizar una cotización en la web y me interesa concretar la compra:
-
-📱 *NUEVO EQUIPO:* ${selectedModel} ${selectedCapacity}GB
-🔋 *Salud:* ${selectedBattery}
-💰 *Valor:* AR$ ${subtotalIphoneARS.toLocaleString()}
-
-${contribTradeInARS > 0 ? `♻️ *ENTREGO COMO CANJE:* ${tradeInModel} ${tradeInCapacity}GB (${tradeInBattery}) por AR$ ${contribTradeInARS.toLocaleString()}` : '✅ *SIN CANJE*'}
-
-💵 *ENTREGA EFECTIVO:* AR$ ${contribCashARS.toLocaleString()}
-${contribCardARS > 0 ? `💳 *FINANCIACIÓN:* ${selectedInstallments} cuotas con ${selectedCard} (Cuota: AR$ ${Math.round(monthlyInstallmentARS).toLocaleString()})` : '✅ *TOTAL CUBIERTO*'}
-
-🚀 ¿Me podrían confirmar disponibilidad y los pasos a seguir? ¡Gracias!`;
-                            const whatsappUrl = `https://wa.me/5493855953712?text=${encodeURIComponent(message)}`;
-                            
-                            return (
-                                <div className="flex flex-col gap-3">
-                                    <a 
-                                        href={whatsappUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="w-full bg-[#25D366] text-white font-black text-xl py-6 rounded-[1.5rem] hover:bg-[#128C7E] active:scale-95 shadow-xl transition-all flex items-center justify-center gap-3"
-                                    >
-                                        <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
-                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                        </svg>
-                                        Continuar por WhatsApp
-                                    </a>
-                                    <button onClick={resetAll} className="w-full text-gray-400 font-bold text-sm py-4 hover:text-black transition-all">Hacer otra cotización</button>
-                                </div>
-                            );
-                        })()}
                     </div>
                 </div>
             )}
