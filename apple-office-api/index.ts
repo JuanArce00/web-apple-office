@@ -48,9 +48,12 @@ app.get('/api/data', async (req, res) => {
         const landingAccessories = await prisma.landingAccessory.findMany({
             orderBy: { order_index: 'asc' }
         });
-        const faqs = await prisma.faq.findMany({
-            orderBy: { order: 'asc' }
-        });
+        let faqs: any[] = [];
+        try {
+            faqs = await prisma.faq.findMany({ orderBy: { order: 'asc' } });
+        } catch (e) {
+            console.error("❌ Error faqs:", e);
+        }
 
         let gallery: any[] = [];
 

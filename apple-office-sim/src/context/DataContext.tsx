@@ -55,6 +55,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
             const res = await fetch(`${API_URL}/api/data`);
+            if (!res.ok) throw new Error(`API error ${res.status}`);
             const json = await res.json();
             setData({
                 ...json,
