@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { Trash2, Plus, Save, Lock, Users, LogIn, HelpCircle } from 'lucide-react';
+import { Trash2, Plus, Save, Lock, Users, LogIn, HelpCircle, Pencil } from 'lucide-react';
 
 import Login from './Login';
 
@@ -16,6 +16,405 @@ function authHeaders(): Record<string, string> {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getToken()}`
     };
+}
+
+const IPHONE_CHRONO_ORDER = [
+    "iphone xr",
+    "iphone xs",
+    "iphone xs max",
+    "iphone 11",
+    "iphone 11 pro",
+    "iphone 11 pro max",
+    "iphone se (2020)",
+    "iphone 12 mini",
+    "iphone 12",
+    "iphone 12 pro",
+    "iphone 12 pro max",
+    "iphone 13 mini",
+    "iphone 13",
+    "iphone 13 pro",
+    "iphone 13 pro max",
+    "iphone se (2022)",
+    "iphone 14",
+    "iphone 14 plus",
+    "iphone 14 pro",
+    "iphone 14 pro max",
+    "iphone 15",
+    "iphone 15 plus",
+    "iphone 15 pro",
+    "iphone 15 pro max",
+    "iphone 16",
+    "iphone 16 plus",
+    "iphone 16 pro",
+    "iphone 16 pro max",
+    "iphone 17 pro",
+    "iphone 17 pro max"
+];
+
+function getModelOrderWeight(modelName: string): number {
+    if (!modelName) return -1;
+    const norm = modelName.toLowerCase().trim();
+    const idx = IPHONE_CHRONO_ORDER.indexOf(norm);
+    if (idx !== -1) {
+        return idx;
+    }
+    for (let i = IPHONE_CHRONO_ORDER.length - 1; i >= 0; i--) {
+        if (norm.includes(IPHONE_CHRONO_ORDER[i])) {
+            return i;
+        }
+    }
+    return 999;
+}
+
+function QuickAddModelModal({ isOpen, onClose, onAdd }: { isOpen: boolean, onClose: () => void, onAdd: (name: string) => Promise<boolean> }) {
+    const [modelName, setModelName] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = modelName.trim();
+        if (!trimmed) return;
+        setLoading(true);
+        const success = await onAdd(trimmed);
+        setLoading(false);
+        if (success) {
+            setModelName("");
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 transform transition-all duration-300 scale-100 flex flex-col gap-4">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900">Agregar Nuevo Modelo</h3>
+                    <button 
+                        onClick={onClose}
+                        type="button" 
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                    >
+                        <Plus className="w-5 h-5 transform rotate-45" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre del Modelo</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: iPhone 16 Pro Max"
+                            value={modelName}
+                            onChange={e => setModelName(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex gap-3 justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 rounded-xl transition-all border border-gray-100"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !modelName.trim()}
+                            className="px-5 py-2.5 text-sm font-semibold bg-black text-white hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? "Guardando..." : "Agregar Modelo"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function SingleInputModal({
+    isOpen,
+    title,
+    label,
+    placeholder,
+    inputType = 'text',
+    onClose,
+    onAdd
+}: {
+    isOpen: boolean,
+    title: string,
+    label: string,
+    placeholder?: string,
+    inputType?: 'text' | 'number',
+    onClose: () => void,
+    onAdd: (value: string) => Promise<boolean | void>
+}) {
+    const [val, setVal] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setVal("");
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = val.trim();
+        if (!trimmed) return;
+        setLoading(true);
+        const success = await onAdd(trimmed);
+        setLoading(false);
+        if (success !== false) {
+            setVal("");
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 transform transition-all duration-300 scale-100 flex flex-col gap-4">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+                    <button 
+                        onClick={onClose}
+                        type="button" 
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                    >
+                        <Plus className="w-5 h-5 transform rotate-45" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
+                        <input
+                            type={inputType}
+                            placeholder={placeholder}
+                            value={val}
+                            onChange={e => setVal(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex gap-3 justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 rounded-xl transition-all border border-gray-100"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !val.trim()}
+                            className="px-5 py-2.5 text-sm font-semibold bg-black text-white hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? "Guardando..." : "Agregar"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function AddCardModal({
+    isOpen,
+    onClose,
+    onAdd
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    onAdd: (name: string, baseFactor: number) => Promise<boolean | void>
+}) {
+    const [cardName, setCardName] = useState("");
+    const [baseFactor, setBaseFactor] = useState("1.00");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setCardName("");
+            setBaseFactor("1.00");
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = cardName.trim();
+        const factor = Number(baseFactor);
+        if (!name || isNaN(factor)) return;
+        setLoading(true);
+        const success = await onAdd(name, factor);
+        setLoading(false);
+        if (success !== false) {
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 transform transition-all duration-300 scale-100 flex flex-col gap-4">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900">Agregar Nueva Tarjeta</h3>
+                    <button 
+                        onClick={onClose}
+                        type="button" 
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                    >
+                        <Plus className="w-5 h-5 transform rotate-45" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre de la Tarjeta</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Visa, Mastercard, American Express"
+                            value={cardName}
+                            onChange={e => setCardName(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Coeficiente Base de la Tarjeta</label>
+                        <input
+                            type="number"
+                            step="0.001"
+                            placeholder="Ej: 1 para normal, 1.05 para American Express"
+                            value={baseFactor}
+                            onChange={e => setBaseFactor(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                        />
+                        <span className="text-[11px] text-gray-400">Determina el recargo base de la tarjeta. 1 significa sin recargo base.</span>
+                    </div>
+                    <div className="flex gap-3 justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 rounded-xl transition-all border border-gray-100"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !cardName.trim() || !baseFactor}
+                            className="px-5 py-2.5 text-sm font-semibold bg-black text-white hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? "Guardando..." : "Agregar Tarjeta"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+interface AddPlanModalProps {
+    isOpen: boolean;
+    cardName: string;
+    onClose: () => void;
+    onAdd: (cardName: string, installments: number, surchargeCoefficient: number) => Promise<boolean | void>;
+}
+
+function AddPlanModal({
+    isOpen,
+    cardName,
+    onClose,
+    onAdd
+}: AddPlanModalProps) {
+    const [installments, setInstallments] = useState("");
+    const [surchargeCoefficient, setSurchargeCoefficient] = useState("1.00");
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setInstallments("");
+            setSurchargeCoefficient("1.00");
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const quotas = Number(installments);
+        const coef = Number(surchargeCoefficient);
+        if (isNaN(quotas) || isNaN(coef) || quotas <= 0) return;
+        setLoading(true);
+        const success = await onAdd(cardName, quotas, coef);
+        setLoading(false);
+        if (success !== false) {
+            onClose();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 transform transition-all duration-300 scale-100 flex flex-col gap-4">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900">Añadir Plan para {cardName}</h3>
+                    <button 
+                        onClick={onClose}
+                        type="button" 
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                    >
+                        <Plus className="w-5 h-5 transform rotate-45" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cantidad de Cuotas</label>
+                        <input
+                            type="number"
+                            min="1"
+                            placeholder="Ej: 3, 6, 9, 12"
+                            value={installments}
+                            onChange={e => setInstallments(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Coeficiente de Recargo</label>
+                        <input
+                            type="number"
+                            step="0.001"
+                            placeholder="Ej: 1.15 para 15% de recargo"
+                            value={surchargeCoefficient}
+                            onChange={e => setSurchargeCoefficient(e.target.value)}
+                            required
+                            className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                        />
+                        <span className="text-[11px] text-gray-400">Coeficiente multiplicador por la cantidad de cuotas. Ej: 1.2 significa 20% de recargo.</span>
+                    </div>
+                    <div className="flex gap-3 justify-end mt-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 rounded-xl transition-all border border-gray-100"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !installments || !surchargeCoefficient}
+                            className="px-5 py-2.5 text-sm font-semibold bg-black text-white hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? "Guardando..." : "Agregar Plan"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
 }
 
 // ─── Main Panel ──────────────────────────────────────────────────────────────
@@ -134,6 +533,44 @@ function AdminBase() {
     const { data, refreshData } = useData();
     const [dolar, setDolar] = useState(data.config.dollar_value);
 
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [entityType, setEntityType] = useState<'model' | 'capacity' | 'battery'>('model');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalLabel, setModalLabel] = useState('');
+    const [modalPlaceholder, setModalPlaceholder] = useState('');
+    const [modalInputType, setModalInputType] = useState<'text' | 'number'>('text');
+
+    const openAddModal = (entity: 'model' | 'capacity' | 'battery', title: string, label: string, placeholder: string, type: 'text' | 'number' = 'text') => {
+        setEntityType(entity);
+        setModalTitle(title);
+        setModalLabel(label);
+        setModalPlaceholder(placeholder);
+        setModalInputType(type);
+        setIsModalOpen(true);
+    };
+
+    const handleAddBase = async (value: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/base/${entityType}`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ value })
+            });
+            if (res.ok) {
+                await refreshData();
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Error al guardar: ${errData.error || 'Es posible que ya exista.'}`);
+                return false;
+            }
+        } catch (e) { 
+            alert("Error al guardar entidad base. Revisa la consola.");
+            return false;
+        }
+    };
+
     const saveDolar = async () => {
         await fetch(`${API_URL}/config`, {
             method: 'POST',
@@ -142,21 +579,6 @@ function AdminBase() {
         });
         await refreshData();
         alert("Cotización guardada exitosamente en la base de datos.");
-    };
-
-    const addBase = async (entity: string, promptText: string) => {
-        const p = prompt(promptText);
-        if (!p) return;
-        try {
-            await fetch(`${API_URL}/base/${entity}`, {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify({ value: p })
-            });
-            await refreshData();
-        } catch (e) { 
-            alert("Error al guardar entidad base. Revisa la consola o los permisos.");
-        }
     };
 
     const removeBase = async (entity: string, val: any) => {
@@ -187,9 +609,19 @@ function AdminBase() {
                 </button>
             </div>
 
-            <ListEditor title="Modelos" items={data.models} onAdd={() => addBase('model', 'Nombre del modelo:')} onRemove={(v) => removeBase('model', v)} />
-            <ListEditor title="Capacidades (GB)" items={data.capacities} onAdd={() => addBase('capacity', 'Capacidad en GB:')} onRemove={(v) => removeBase('capacity', v)} />
-            <ListEditor title="Baterías" items={data.batteries} onAdd={() => addBase('battery', 'Estado de Batería:')} onRemove={(v) => removeBase('battery', v)} />
+            <ListEditor title="Modelos" items={data.models} onAdd={() => openAddModal('model', 'Agregar Nuevo Modelo', 'Nombre del Modelo', 'Ej: iPhone 16 Pro Max', 'text')} onRemove={(v) => removeBase('model', v)} />
+            <ListEditor title="Capacidades (GB)" items={data.capacities} onAdd={() => openAddModal('capacity', 'Agregar Nueva Capacidad', 'Capacidad en GB', 'Ej: 256', 'number')} onRemove={(v) => removeBase('capacity', v)} />
+            <ListEditor title="Baterías" items={data.batteries} onAdd={() => openAddModal('battery', 'Agregar Rango/Estado de Batería', 'Estado/Rango de Batería', 'Ej: +90% o 85% - 89%', 'text')} onRemove={(v) => removeBase('battery', v)} />
+
+            <SingleInputModal
+                isOpen={isModalOpen}
+                title={modalTitle}
+                label={modalLabel}
+                placeholder={modalPlaceholder}
+                inputType={modalInputType}
+                onClose={() => setIsModalOpen(false)}
+                onAdd={handleAddBase}
+            />
         </div>
     );
 }
@@ -222,6 +654,13 @@ function AdminStock() {
     const [cap, setCap] = useState(data.capacities[0] || 0);
     const [bat, setBat] = useState(data.batteries[0] || "");
     const [price, setPrice] = useState(0);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterModel, setFilterModel] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    const ITEMS_PER_PAGE = 15;
 
     useEffect(() => {
         if (!model && data.models.length > 0) setModel(data.models[0]);
@@ -229,36 +668,146 @@ function AdminStock() {
         if (!bat && data.batteries.length > 0) setBat(data.batteries[0]);
     }, [data.models, data.capacities, data.batteries]);
 
-    const handleAdd = async () => {
+    const handleQuickAddModel = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleAddQuickModel = async (name: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/base/model`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ value: name })
+            });
+            if (res.ok) {
+                await refreshData();
+                setModel(name);
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Error al guardar modelo: ${errData.error || 'Es posible que ya exista.'}`);
+                return false;
+            }
+        } catch (e) {
+            alert("Error al guardar modelo.");
+            return false;
+        }
+    };
+
+    const handleSave = async () => {
         if (!model || cap === 0 || !bat || price === 0) return alert("Completa todos los campos con valores válidos");
-        await fetch(`${API_URL}/stock`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ model, capacity_gb: cap, battery_status: bat, price_usd: price })
-        });
-        await refreshData();
-        alert("Stock agregado a la base de datos");
+        
+        const payload = { model, capacity_gb: cap, battery_status: bat, price_usd: price };
+        
+        try {
+            if (editingId) {
+                await fetch(`${API_URL}/stock/${editingId}`, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                alert("Stock actualizado en la base de datos");
+                setEditingId(null);
+            } else {
+                await fetch(`${API_URL}/stock`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                alert("Stock agregado a la base de datos");
+            }
+            
+            // Reset fields
+            setPrice(0);
+            await refreshData();
+        } catch (e) {
+            alert("Error al guardar stock");
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setModel(data.models[0] || "");
+        setCap(data.capacities[0] || 0);
+        setBat(data.batteries[0] || "");
+        setPrice(0);
+    };
+
+    const startEdit = (item: any) => {
+        setEditingId(item.id);
+        setModel(item.model);
+        setCap(item.capacity_gb);
+        setBat(item.battery_status);
+        setPrice(item.price_usd);
     };
 
     const removeStock = async (id: string) => {
-        await fetch(`${API_URL}/stock/${id}`, { method: 'DELETE', headers: authHeaders() });
-        await refreshData();
+        if (confirm("¿Estás seguro de eliminar este registro de stock?")) {
+            await fetch(`${API_URL}/stock/${id}`, { method: 'DELETE', headers: authHeaders() });
+            if (editingId === id) {
+                cancelEdit();
+            }
+            await refreshData();
+        }
     };
+
+    // Filter stock
+    const filteredStock = data.iphoneStock.filter(s => {
+        const matchesModel = filterModel ? s.model === filterModel : true;
+        const query = searchTerm.toLowerCase();
+        const matchesQuery = (
+            s.model.toLowerCase().includes(query) ||
+            s.capacity_gb.toString().includes(query) ||
+            s.battery_status.toLowerCase().includes(query)
+        );
+        return matchesModel && matchesQuery;
+    });
+
+    // Chronological Sort: newest model to oldest model
+    const sortedStock = [...filteredStock].sort((a, b) => {
+        const weightA = getModelOrderWeight(a.model);
+        const weightB = getModelOrderWeight(b.model);
+        if (weightA !== weightB) {
+            return weightB - weightA; // Newer first
+        }
+        if (a.capacity_gb !== b.capacity_gb) {
+            return b.capacity_gb - a.capacity_gb; // Larger capacity first
+        }
+        return b.price_usd - a.price_usd; // Higher price first
+    });
+
+    // Pagination
+    const totalItems = sortedStock.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const paginatedStock = sortedStock.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-4 self-start">
-                <h3 className="font-semibold text-lg mb-4">Alta de Combinación (Venta)</h3>
+                <h3 className="font-semibold text-lg mb-4">{editingId ? 'Editar Combinación (Venta)' : 'Alta de Combinación (Venta)'}</h3>
                 <div className="flex flex-col gap-3">
-                    <select value={model} onChange={e => setModel(e.target.value)} className="border p-2 rounded w-full">
-                        <option value="">Seleccionar Modelo...</option>
-                        {data.models.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select value={cap} onChange={e => setCap(Number(e.target.value))} className="border p-2 rounded w-full">
+                    <div className="flex gap-2 items-center w-full">
+                        <select value={model} onChange={e => setModel(e.target.value)} className="border p-2 rounded flex-1 bg-white">
+                            <option value="">Seleccionar Modelo...</option>
+                            {data.models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={handleQuickAddModel}
+                            className="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 border flex items-center justify-center shrink-0"
+                            title="Alta Rápida de Modelo"
+                        >
+                            <Plus className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
+                    <select value={cap} onChange={e => setCap(Number(e.target.value))} className="border p-2 rounded w-full bg-white">
                         <option value={0}>Seleccionar Capacidad...</option>
                         {data.capacities.map(c => <option key={c} value={c}>{c} GB</option>)}
                     </select>
-                    <select value={bat} onChange={e => setBat(e.target.value)} className="border p-2 rounded w-full">
+                    <select value={bat} onChange={e => setBat(e.target.value)} className="border p-2 rounded w-full bg-white">
                         <option value="">Seleccionar Batería...</option>
                         {data.batteries.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
@@ -266,29 +815,110 @@ function AdminStock() {
                         <label className="text-xs text-gray-500">Precio de Venta (USD)</label>
                         <input type="number" value={price === 0 ? '' : price} onChange={e => setPrice(Number(e.target.value))} className="border p-2 rounded w-full" placeholder="Ej: 1100" />
                     </div>
-                    <button onClick={handleAdd} className="mt-2 w-full bg-black text-white p-2 text-sm rounded-lg hover:bg-gray-800">Agregar Stock</button>
+                    <button onClick={handleSave} className="mt-2 w-full bg-black text-white p-2 text-sm rounded-lg hover:bg-gray-800">
+                        {editingId ? 'Guardar Cambios' : 'Agregar Stock'}
+                    </button>
+                    {editingId && (
+                        <button onClick={cancelEdit} className="w-full text-gray-500 text-sm hover:underline mt-1">
+                            Cancelar Edición
+                        </button>
+                    )}
                 </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-8">
-                <h3 className="font-semibold text-lg mb-4">Stock en Base de Datos</h3>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <h3 className="font-semibold text-lg">Stock en Base de Datos</h3>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <select
+                            value={filterModel}
+                            onChange={e => {
+                                setFilterModel(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="border px-3 py-1.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-black bg-white"
+                        >
+                            <option value="">Todos los Modelos</option>
+                            {data.models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <div className="w-full sm:w-64">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Buscar..." 
+                                value={searchTerm}
+                                onChange={e => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full border px-3 py-1.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            />
+                        </div>
+                    </div>
+                </div>
+                
                 <div className="flex flex-col gap-2">
-                    {data.iphoneStock.length === 0 && <p className="text-gray-400">No hay equipos en stock</p>}
-                    {data.iphoneStock.map(s => (
+                    {paginatedStock.length === 0 && <p className="text-gray-400 text-center py-4">No se encontraron equipos en stock</p>}
+                    {paginatedStock.map(s => (
                         <div key={s.id} className="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50">
                             <div>
                                 <span className="font-semibold">{s.model} {s.capacity_gb}GB</span> - <span className="text-sm font-medium text-blue-600 px-2 py-1 bg-blue-50 rounded">{s.battery_status}</span>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="text-right">
+                            <div className="flex items-center gap-3">
+                                <div className="text-right mr-2">
                                     <div className="font-bold">U$D {s.price_usd}</div>
                                 </div>
-                                <button onClick={() => removeStock(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded"><Trash2 className="w-4 h-4" /></button>
+                                <button onClick={() => startEdit(s)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded" title="Editar"><Pencil className="w-4 h-4" /></button>
+                                <button onClick={() => removeStock(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
                             </div>
                         </div>
                     ))}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-100">
+                        <span className="text-sm text-gray-500">
+                            Mostrando <span className="font-semibold text-gray-900">{Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1)}</span> a <span className="font-semibold text-gray-900">{Math.min(totalItems, currentPage * ITEMS_PER_PAGE)}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> registros
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 text-sm font-medium border rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setCurrentPage(p)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-xl text-sm font-semibold transition-all ${
+                                        currentPage === p 
+                                            ? 'bg-black text-white' 
+                                            : 'border border-transparent hover:border-gray-200 hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 text-sm font-medium border rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <QuickAddModelModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                onAdd={handleAddQuickModel} 
+            />
         </div>
     );
 }
@@ -301,6 +931,13 @@ function AdminTradeIn() {
     const [cap, setCap] = useState(data.capacities[0] || 0);
     const [bat, setBat] = useState(data.batteries[0] || "");
     const [price, setPrice] = useState(0);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterModel, setFilterModel] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    const ITEMS_PER_PAGE = 15;
 
     useEffect(() => {
         if (!model && data.models.length > 0) setModel(data.models[0]);
@@ -308,35 +945,146 @@ function AdminTradeIn() {
         if (!bat && data.batteries.length > 0) setBat(data.batteries[0]);
     }, [data.models, data.capacities, data.batteries]);
 
-    const handleAdd = async () => {
+    const handleQuickAddModel = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleAddQuickModel = async (name: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/base/model`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ value: name })
+            });
+            if (res.ok) {
+                await refreshData();
+                setModel(name);
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Error al guardar modelo: ${errData.error || 'Es posible que ya exista.'}`);
+                return false;
+            }
+        } catch (e) {
+            alert("Error al guardar modelo.");
+            return false;
+        }
+    };
+
+    const handleSave = async () => {
         if (!model || cap === 0 || !bat || price === 0) return alert("Completa todos los campos con valores válidos");
-        await fetch(`${API_URL}/tradein`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ model, capacity_gb: cap, battery_range: bat, price_usd: price })
-        });
-        await refreshData();
+        
+        const payload = { model, capacity_gb: cap, battery_range: bat, price_usd: price };
+        
+        try {
+            if (editingId) {
+                await fetch(`${API_URL}/tradein/${editingId}`, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                alert("Precio de toma actualizado en la base de datos");
+                setEditingId(null);
+            } else {
+                await fetch(`${API_URL}/tradein`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                alert("Precio de toma agregado a la base de datos");
+            }
+            
+            // Reset fields
+            setPrice(0);
+            await refreshData();
+        } catch (e) {
+            alert("Error al guardar precio de toma");
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setModel(data.models[0] || "");
+        setCap(data.capacities[0] || 0);
+        setBat(data.batteries[0] || "");
+        setPrice(0);
+    };
+
+    const startEdit = (item: any) => {
+        setEditingId(item.id);
+        setModel(item.model);
+        setCap(item.capacity_gb);
+        setBat(item.battery_range);
+        setPrice(item.price_usd);
     };
 
     const removeTradeIn = async (id: string) => {
-        await fetch(`${API_URL}/tradein/${id}`, { method: 'DELETE', headers: authHeaders() });
-        await refreshData();
+        if (confirm("¿Estás seguro de eliminar este precio de toma?")) {
+            await fetch(`${API_URL}/tradein/${id}`, { method: 'DELETE', headers: authHeaders() });
+            if (editingId === id) {
+                cancelEdit();
+            }
+            await refreshData();
+        }
     };
+
+    // Filter trade-in prices
+    const filteredTradeIn = data.tradeInPrices.filter(s => {
+        const matchesModel = filterModel ? s.model === filterModel : true;
+        const query = searchTerm.toLowerCase();
+        const matchesQuery = (
+            s.model.toLowerCase().includes(query) ||
+            s.capacity_gb.toString().includes(query) ||
+            s.battery_range.toLowerCase().includes(query)
+        );
+        return matchesModel && matchesQuery;
+    });
+
+    // Chronological Sort: newest model to oldest model
+    const sortedTradeIn = [...filteredTradeIn].sort((a, b) => {
+        const weightA = getModelOrderWeight(a.model);
+        const weightB = getModelOrderWeight(b.model);
+        if (weightA !== weightB) {
+            return weightB - weightA; // Newer first
+        }
+        if (a.capacity_gb !== b.capacity_gb) {
+            return b.capacity_gb - a.capacity_gb; // Larger capacity first
+        }
+        return b.price_usd - a.price_usd; // Higher price first
+    });
+
+    // Pagination
+    const totalItems = sortedTradeIn.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const paginatedTradeIn = sortedTradeIn.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-4 self-start">
-                <h3 className="font-semibold text-lg mb-4">Alta Precio de Toma (Trade-In)</h3>
+                <h3 className="font-semibold text-lg mb-4">{editingId ? 'Editar Precio de Toma (Trade-In)' : 'Alta Precio de Toma (Trade-In)'}</h3>
                 <div className="flex flex-col gap-3">
-                    <select value={model} onChange={e => setModel(e.target.value)} className="border p-2 rounded w-full">
-                        <option value="">Seleccionar Modelo...</option>
-                        {data.models.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select value={cap} onChange={e => setCap(Number(e.target.value))} className="border p-2 rounded w-full">
+                    <div className="flex gap-2 items-center w-full">
+                        <select value={model} onChange={e => setModel(e.target.value)} className="border p-2 rounded flex-1 bg-white">
+                            <option value="">Seleccionar Modelo...</option>
+                            {data.models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={handleQuickAddModel}
+                            className="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 border flex items-center justify-center shrink-0"
+                            title="Alta Rápida de Modelo"
+                        >
+                            <Plus className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
+                    <select value={cap} onChange={e => setCap(Number(e.target.value))} className="border p-2 rounded w-full bg-white">
                         <option value={0}>Seleccionar Capacidad...</option>
                         {data.capacities.map(c => <option key={c} value={c}>{c} GB</option>)}
                     </select>
-                    <select value={bat} onChange={e => setBat(e.target.value)} className="border p-2 rounded w-full">
+                    <select value={bat} onChange={e => setBat(e.target.value)} className="border p-2 rounded w-full bg-white">
                         <option value="">Seleccionar Batería...</option>
                         {data.batteries.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
@@ -344,26 +1092,108 @@ function AdminTradeIn() {
                         <label className="text-xs text-gray-500">Precio de toma USD</label>
                         <input type="number" value={price === 0 ? '' : price} onChange={e => setPrice(Number(e.target.value))} className="border p-2 rounded w-full" placeholder="Ej: 300" />
                     </div>
-                    <button onClick={handleAdd} className="mt-2 w-full bg-black text-white p-2 text-sm rounded-lg hover:bg-gray-800">Agregar Toma DB</button>
+                    <button onClick={handleSave} className="mt-2 w-full bg-black text-white p-2 text-sm rounded-lg hover:bg-gray-800">
+                        {editingId ? 'Guardar Cambios' : 'Agregar Toma DB'}
+                    </button>
+                    {editingId && (
+                        <button onClick={cancelEdit} className="w-full text-gray-500 text-sm hover:underline mt-1">
+                            Cancelar Edición
+                        </button>
+                    )}
                 </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border shadow-sm lg:col-span-8">
-                <h3 className="font-semibold text-lg mb-4">Catálogo de Tomas</h3>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <h3 className="font-semibold text-lg">Catálogo de Tomas</h3>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <select
+                            value={filterModel}
+                            onChange={e => {
+                                setFilterModel(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="border px-3 py-1.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-black bg-white"
+                        >
+                            <option value="">Todos los Modelos</option>
+                            {data.models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <div className="w-full sm:w-64">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Buscar..." 
+                                value={searchTerm}
+                                onChange={e => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full border px-3 py-1.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            />
+                        </div>
+                    </div>
+                </div>
+                
                 <div className="flex flex-col gap-2">
-                    {data.tradeInPrices.map(s => (
+                    {paginatedTradeIn.length === 0 && <p className="text-gray-400 text-center py-4">No se encontraron precios de toma</p>}
+                    {paginatedTradeIn.map(s => (
                         <div key={s.id} className="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50">
                             <div>
                                 <span className="font-semibold">{s.model} {s.capacity_gb}GB</span> - {s.battery_range}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="font-bold">U$D {s.price_usd}</div>
-                                <button onClick={() => removeTradeIn(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded"><Trash2 className="w-4 h-4" /></button>
+                            <div className="flex items-center gap-3">
+                                <div className="font-bold mr-2">U$D {s.price_usd}</div>
+                                <button onClick={() => startEdit(s)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded" title="Editar"><Pencil className="w-4 h-4" /></button>
+                                <button onClick={() => removeTradeIn(s.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
                             </div>
                         </div>
                     ))}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-100">
+                        <span className="text-sm text-gray-500">
+                            Mostrando <span className="font-semibold text-gray-900">{Math.min(totalItems, (currentPage - 1) * ITEMS_PER_PAGE + 1)}</span> a <span className="font-semibold text-gray-900">{Math.min(totalItems, currentPage * ITEMS_PER_PAGE)}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> registros
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 text-sm font-medium border rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setCurrentPage(p)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-xl text-sm font-semibold transition-all ${
+                                        currentPage === p 
+                                            ? 'bg-black text-white' 
+                                            : 'border border-transparent hover:border-gray-200 hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 text-sm font-medium border rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <QuickAddModelModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                onAdd={handleAddQuickModel} 
+            />
         </div>
     );
 }
@@ -373,43 +1203,67 @@ function AdminTradeIn() {
 function AdminFinance() {
     const { data, refreshData } = useData();
 
-    const addCard = async () => {
-        const p = prompt("Nombre de la tarjeta (Ej: Visa):");
-        if (!p) return;
-        const factor = prompt("Coeficiente Base de la tarjeta (Ej 1 para normal, 1.05 para American Express):");
-        const numFactor = Number(factor);
-        if (!isNaN(numFactor)) {
-            await fetch(`${API_URL}/cards`, {
+    // Modal state for adding a Card
+    const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+
+    // Modal state for adding a Plan
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [selectedCardName, setSelectedCardName] = useState("");
+
+    const handleAddCard = async (name: string, baseFactor: number): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/cards`, {
                 method: 'POST',
                 headers: authHeaders(),
-                body: JSON.stringify({ card_name: p, base_factor: numFactor })
+                body: JSON.stringify({ card_name: name, base_factor: baseFactor })
             });
-            await refreshData();
+            if (res.ok) {
+                await refreshData();
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Error al agregar tarjeta: ${errData.error || 'Es posible que ya exista.'}`);
+                return false;
+            }
+        } catch (e) {
+            alert("Error al agregar tarjeta.");
+            return false;
+        }
+    };
+
+    const handleAddPlan = async (cardName: string, installments: number, surchargeCoefficient: number): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/plans`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ card_name: cardName, installments, surcharge_coefficient: surchargeCoefficient })
+            });
+            if (res.ok) {
+                await refreshData();
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Error al agregar plan: ${errData.error || 'Es posible que ya exista.'}`);
+                return false;
+            }
+        } catch (e) {
+            alert("Error al agregar plan.");
+            return false;
         }
     };
 
     const removeCard = async (card_name: string) => {
-        await fetch(`${API_URL}/cards/${card_name}`, { method: 'DELETE', headers: authHeaders() });
-        await refreshData();
-    };
-
-    const addPlan = async (card_name: string) => {
-        const quotas = prompt(`¿Cuántas cuotas para ${card_name}? (Ej: 3)`);
-        if (!quotas) return;
-        const coef = prompt(`Coeficiente de recargo por las ${quotas} cuotas:`);
-        if (!isNaN(Number(quotas)) && !isNaN(Number(coef))) {
-            await fetch(`${API_URL}/plans`, {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify({ card_name, installments: Number(quotas), surcharge_coefficient: Number(coef) })
-            });
+        if (confirm(`¿Estás seguro de eliminar la tarjeta ${card_name}?`)) {
+            await fetch(`${API_URL}/cards/${card_name}`, { method: 'DELETE', headers: authHeaders() });
             await refreshData();
         }
     };
 
     const removePlan = async (id: string) => {
-        await fetch(`${API_URL}/plans/${id}`, { method: 'DELETE', headers: authHeaders() });
-        await refreshData();
+        if (confirm("¿Estás seguro de eliminar este plan?")) {
+            await fetch(`${API_URL}/plans/${id}`, { method: 'DELETE', headers: authHeaders() });
+            await refreshData();
+        }
     };
 
     return (
@@ -419,7 +1273,7 @@ function AdminFinance() {
                     <h2 className="text-xl font-bold">Tarjetas y Planes DB</h2>
                     <p className="text-gray-500 text-sm">Gestiona financiamiento remoto.</p>
                 </div>
-                <button onClick={addCard} className="bg-black text-white px-4 py-2 font-medium rounded-lg hover:bg-gray-800">
+                <button onClick={() => setIsCardModalOpen(true)} className="bg-black text-white px-4 py-2 font-medium rounded-lg hover:bg-gray-800">
                     Nueva Tarjeta
                 </button>
             </div>
@@ -447,12 +1301,25 @@ function AdminFinance() {
                             ))}
                         </div>
 
-                        <button onClick={() => addPlan(c.card_name)} className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm font-medium text-gray-600 hover:border-gray-500">
+                        <button onClick={() => { setSelectedCardName(c.card_name); setIsPlanModalOpen(true); }} className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm font-medium text-gray-600 hover:border-gray-500">
                             + Añadir Plan
                         </button>
                     </div>
                 ))}
             </div>
+
+            <AddCardModal
+                isOpen={isCardModalOpen}
+                onClose={() => setIsCardModalOpen(false)}
+                onAdd={handleAddCard}
+            />
+
+            <AddPlanModal
+                isOpen={isPlanModalOpen}
+                cardName={selectedCardName}
+                onClose={() => setIsPlanModalOpen(false)}
+                onAdd={handleAddPlan}
+            />
         </div>
     );
 }

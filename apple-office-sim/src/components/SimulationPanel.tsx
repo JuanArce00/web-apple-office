@@ -37,6 +37,22 @@ export default function SimulationPanel() {
     }, [isModalOpen]);
 
     // --- DERIVED DATA ---
+    const availableCapacities = useMemo(() => {
+        if (!selectedModel) return [];
+        const caps = data.iphoneStock
+            .filter(s => s.model === selectedModel)
+            .map(s => s.capacity_gb);
+        return Array.from(new Set(caps)).sort((a, b) => a - b);
+    }, [selectedModel, data.iphoneStock]);
+
+    const availableBatteries = useMemo(() => {
+        if (!selectedModel || !selectedCapacity) return [];
+        const bats = data.iphoneStock
+            .filter(s => s.model === selectedModel && s.capacity_gb === selectedCapacity)
+            .map(s => s.battery_status);
+        return Array.from(new Set(bats));
+    }, [selectedModel, selectedCapacity, data.iphoneStock]);
+
     const matchedIphone = useMemo(() => {
         if (!selectedModel || !selectedCapacity || !selectedBattery) return null;
         // Buscamos ignorando el color
@@ -184,7 +200,11 @@ export default function SimulationPanel() {
                                     <label className="block text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Modelo</label>
                                     <select
                                         value={selectedModel || ''}
-                                        onChange={(e) => setSelectedModel(e.target.value)}
+                                        onChange={(e) => {
+                                            setSelectedModel(e.target.value);
+                                            setSelectedCapacity(null);
+                                            setSelectedBattery(null);
+                                        }}
                                         className="w-full px-4 py-4 rounded-xl border-2 border-gray-100 font-bold bg-white text-gray-900 focus:border-emerald-500 outline-none"
                                     >
                                         <option value="" disabled>Seleccioná modelo</option>
@@ -196,11 +216,15 @@ export default function SimulationPanel() {
                                     <label className="block text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Capacidad</label>
                                     <select
                                         value={selectedCapacity === null ? '' : selectedCapacity}
-                                        onChange={(e) => setSelectedCapacity(Number(e.target.value))}
-                                        className="w-full px-4 py-4 rounded-xl border-2 border-gray-100 font-bold bg-white text-gray-900 focus:border-emerald-500 outline-none"
+                                        onChange={(e) => {
+                                            setSelectedCapacity(Number(e.target.value));
+                                            setSelectedBattery(null);
+                                        }}
+                                        disabled={!selectedModel}
+                                        className="w-full px-4 py-4 rounded-xl border-2 border-gray-100 font-bold bg-white text-gray-900 focus:border-emerald-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <option value="" disabled>Seleccioná capacidad</option>
-                                        {data.capacities.map(c => <option key={c} value={c}>{c} GB</option>)}
+                                        {availableCapacities.map(c => <option key={c} value={c}>{c} GB</option>)}
                                     </select>
                                 </div>
 
@@ -209,10 +233,11 @@ export default function SimulationPanel() {
                                     <select
                                         value={selectedBattery || ''}
                                         onChange={(e) => setSelectedBattery(e.target.value)}
-                                        className="w-full px-4 py-4 rounded-xl border-2 border-gray-100 font-bold bg-white text-gray-900 focus:border-emerald-500 outline-none"
+                                        disabled={!selectedCapacity}
+                                        className="w-full px-4 py-4 rounded-xl border-2 border-gray-100 font-bold bg-white text-gray-900 focus:border-emerald-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <option value="" disabled>Seleccioná rango de batería</option>
-                                        {data.batteries.map(b => <option key={b} value={b}>{b}</option>)}
+                                        {availableBatteries.map(b => <option key={b} value={b}>{b}</option>)}
                                     </select>
                                 </div>
                             </div>

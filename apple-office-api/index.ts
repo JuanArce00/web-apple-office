@@ -270,6 +270,25 @@ app.post('/api/stock', authenticateToken, async (req, res) => {
     await prisma.iphoneStock.create({ data: req.body });
     res.json({ success: true });
 });
+app.put('/api/stock/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { model, capacity_gb, battery_status, price_usd } = req.body;
+        await prisma.iphoneStock.update({
+            where: { id },
+            data: {
+                model,
+                capacity_gb: Number(capacity_gb),
+                battery_status,
+                price_usd: Number(price_usd)
+            }
+        });
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error updating stock:", e);
+        res.status(500).json({ error: 'Failed to update stock' });
+    }
+});
 app.delete('/api/stock/:id', authenticateToken, async (req, res) => {
     await prisma.iphoneStock.delete({ where: { id: req.params.id } });
     res.json({ success: true });
@@ -279,6 +298,25 @@ app.delete('/api/stock/:id', authenticateToken, async (req, res) => {
 app.post('/api/tradein', authenticateToken, async (req, res) => {
     await prisma.tradeInPrice.create({ data: req.body });
     res.json({ success: true });
+});
+app.put('/api/tradein/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { model, capacity_gb, battery_range, price_usd } = req.body;
+        await prisma.tradeInPrice.update({
+            where: { id },
+            data: {
+                model,
+                capacity_gb: Number(capacity_gb),
+                battery_range,
+                price_usd: Number(price_usd)
+            }
+        });
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error updating tradein:", e);
+        res.status(500).json({ error: 'Failed to update tradein' });
+    }
 });
 app.delete('/api/tradein/:id', authenticateToken, async (req, res) => {
     await prisma.tradeInPrice.delete({ where: { id: req.params.id } });
