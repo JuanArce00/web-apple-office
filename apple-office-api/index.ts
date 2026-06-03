@@ -37,7 +37,6 @@ app.get('/api/data', async (req, res) => {
         const models = await prisma.baseModel.findMany();
         const capacities = await prisma.baseCapacity.findMany();
         const batteries = await prisma.baseBattery.findMany();
-        const accessories = await prisma.accessory.findMany();
         const iphoneStock = await prisma.iphoneStock.findMany();
         const tradeInPrices = await prisma.tradeInPrice.findMany();
         const cards = await prisma.financingCard.findMany();
@@ -107,7 +106,6 @@ app.get('/api/data', async (req, res) => {
             models: models.map((m: any) => m.name),
             capacities: capacities.map((c: any) => c.size),
             batteries: batteries.map((b: any) => b.status),
-            accessories,
             iphoneStock,
             tradeInPrices,
             cards,
@@ -255,20 +253,6 @@ app.delete('/api/base/:entity', authenticateToken, async (req, res) => {
     }
 });
 
-// Accessories CRUD
-app.post('/api/accessories', authenticateToken, async (req, res) => {
-    try {
-        const { name, price_usd } = req.body;
-        await prisma.accessory.create({ data: { name, price_usd: Number(price_usd) } });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
-});
-app.delete('/api/accessories/:id', authenticateToken, async (req, res) => {
-    await prisma.accessory.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
-});
 
 app.post('/api/stock', authenticateToken, async (req, res) => {
     try {

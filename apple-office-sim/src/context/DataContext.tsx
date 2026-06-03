@@ -13,7 +13,7 @@ export type AppData = {
     models: string[];
     capacities: number[];
     batteries: string[];
-    accessories: Array<{ id: string, name: string, price_usd: number }>;
+
     iphoneStock: Array<{ id: string, model: string, capacity_gb: number, battery_status: string, price_usd: number }>;
     tradeInPrices: Array<{ id: string, model: string, capacity_gb: number, battery_range: string, price_usd: number }>;
     cards: Array<{ card_name: string, base_factor: number }>;
@@ -37,7 +37,7 @@ const defaultData: AppData = {
     config: { dollar_value: 1000 },
     feature_cards: DEFAULT_FEATURE_CARDS,
     models: [], capacities: [], batteries: [],
-    accessories: [], iphoneStock: [], tradeInPrices: [], cards: [], plans: [], gallery: [], storeGallery: [], landingIphones: [], landingAccessories: [], faqs: []
+    iphoneStock: [], tradeInPrices: [], cards: [], plans: [], gallery: [], storeGallery: [], landingIphones: [], landingAccessories: [], faqs: []
 };
 
 

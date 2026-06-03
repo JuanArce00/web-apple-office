@@ -36,14 +36,6 @@ model BaseBattery {
   @@map("basebattery")
 }
 
-model Accessory {
-  id        String @id @default(uuid())
-  name      String
-  price_usd Float
-
-  @@map("accessory")
-}
-
 model IphoneStock {
   id             String   @id @default(uuid())
   model          String
