@@ -309,7 +309,7 @@ export default function SimulationPanel() {
                                         onChange={e => { setTradeInModel(e.target.value); setTradeInCapacity(null); setTradeInBattery(null); }}
                                     >
                                         <option value="" disabled>Seleccioná modelo</option>
-                                        {Array.from(new Set(data.tradeInPrices.map(b => b.model))).map(m => <option key={m} value={m}>{m}</option>)}
+                                        {data.models.filter(m => data.tradeInPrices.some(b => b.model === m)).map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
                                 </div>
                                 <div>

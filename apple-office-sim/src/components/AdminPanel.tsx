@@ -1849,11 +1849,10 @@ function AdminLandingIphones() {
                         <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Precio (Texto)</label>
                         <input
                             type="text"
-                            placeholder="Ej: Desde $799.999"
+                            placeholder="Ej: Desde $799.999 (Opcional)"
                             value={price}
                             onChange={e => setPrice(e.target.value)}
                             className="border rounded-xl px-3 py-2.5 text-sm"
-                            required
                         />
                     </div>
                     <div className="flex flex-col gap-1">
@@ -1990,11 +1989,10 @@ function AdminLandingAccessories() {
                         <label className="text-[10px] uppercase font-bold text-gray-400 ml-1">Precio (Texto)</label>
                         <input
                             type="text"
-                            placeholder="Ej: Desde $299.999"
+                            placeholder="Ej: Desde $299.999 (Opcional)"
                             value={price}
                             onChange={e => setPrice(e.target.value)}
                             className="border rounded-xl px-3 py-2.5 text-sm"
-                            required
                         />
                     </div>
                     <div className="flex flex-col gap-1">

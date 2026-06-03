@@ -257,18 +257,34 @@ app.delete('/api/base/:entity', authenticateToken, async (req, res) => {
 
 // Accessories CRUD
 app.post('/api/accessories', authenticateToken, async (req, res) => {
-    await prisma.accessory.create({ data: req.body });
-    res.json({ success: true });
+    try {
+        const { name, price_usd } = req.body;
+        await prisma.accessory.create({ data: { name, price_usd: Number(price_usd) } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 app.delete('/api/accessories/:id', authenticateToken, async (req, res) => {
     await prisma.accessory.delete({ where: { id: req.params.id } });
     res.json({ success: true });
 });
 
-// Stock CRUD
 app.post('/api/stock', authenticateToken, async (req, res) => {
-    await prisma.iphoneStock.create({ data: req.body });
-    res.json({ success: true });
+    try {
+        const { model, capacity_gb, battery_status, price_usd } = req.body;
+        await prisma.iphoneStock.create({ 
+            data: {
+                model,
+                capacity_gb: Number(capacity_gb),
+                battery_status,
+                price_usd: Number(price_usd)
+            } 
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to create stock' });
+    }
 });
 app.put('/api/stock/:id', authenticateToken, async (req, res) => {
     try {
@@ -296,8 +312,15 @@ app.delete('/api/stock/:id', authenticateToken, async (req, res) => {
 
 // Trade-In CRUD
 app.post('/api/tradein', authenticateToken, async (req, res) => {
-    await prisma.tradeInPrice.create({ data: req.body });
-    res.json({ success: true });
+    try {
+        const { model, capacity_gb, battery_range, price_usd } = req.body;
+        await prisma.tradeInPrice.create({ 
+            data: { model, capacity_gb: Number(capacity_gb), battery_range, price_usd: Number(price_usd) } 
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 app.put('/api/tradein/:id', authenticateToken, async (req, res) => {
     try {
@@ -325,8 +348,13 @@ app.delete('/api/tradein/:id', authenticateToken, async (req, res) => {
 
 // Financing Options
 app.post('/api/cards', authenticateToken, async (req, res) => {
-    await prisma.financingCard.create({ data: req.body });
-    res.json({ success: true });
+    try {
+        const { card_name, base_factor } = req.body;
+        await prisma.financingCard.create({ data: { card_name, base_factor: Number(base_factor) } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 app.delete('/api/cards/:id', authenticateToken, async (req, res) => {
     await prisma.financingCard.delete({ where: { card_name: req.params.id } });
@@ -334,8 +362,19 @@ app.delete('/api/cards/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/plans', authenticateToken, async (req, res) => {
-    await prisma.financingPlan.create({ data: req.body });
-    res.json({ success: true });
+    try {
+        const { card_name, installments, surcharge_coefficient } = req.body;
+        await prisma.financingPlan.create({ 
+            data: { 
+                card_name, 
+                installments: Number(installments), 
+                surcharge_coefficient: Number(surcharge_coefficient) 
+            } 
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 app.delete('/api/plans/:id', authenticateToken, async (req, res) => {
     await prisma.financingPlan.delete({ where: { id: req.params.id } });

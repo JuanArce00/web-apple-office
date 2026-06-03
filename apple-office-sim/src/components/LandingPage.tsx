@@ -85,15 +85,19 @@ export default function LandingPage({ setView }: { setView: (v: 'simulation' | '
                 {/* Botanical highlight */}
                 <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-emerald-800/20 rounded-full blur-[100px] pointer-events-none z-0 animate-pulse" style={{ animationDuration: '4s' }}></div>
 
-                {/* Hero Image in the background (centered behind text) */}
-                <div className="absolute inset-0 w-full h-full flex items-center justify-center z-0 pointer-events-none overflow-hidden pt-24 md:pt-32">
-                    <img
-                        src="/custom-hero-iphones.png"
-                        alt="Nuevos modelos de Apple"
-                        className="w-[150%] max-w-none md:w-[1000px] h-auto object-contain opacity-80 drop-shadow-[0_0_90px_rgba(16,185,129,0.15)] animate-in fade-in zoom-in-95 duration-[2000ms]"
+                {/* Video Background */}
+                <div className="absolute inset-0 w-full h-full z-0 pointer-events-none overflow-hidden">
+                    <video
+                        src="/video-apple-office.MOV"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover opacity-60 animate-in fade-in duration-[2000ms]"
                     />
-                    {/* Radial gradient overlay to blend harsh edges into background */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_black_70%)] opacity-100"></div>
+                    {/* Gradients to ensure text readability and blend with the black theme */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_20%,_black_100%)] opacity-90 pointer-events-none"></div>
                 </div>
 
                 {/* Text Content */}
