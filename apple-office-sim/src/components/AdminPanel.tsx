@@ -856,7 +856,7 @@ function AdminStock() {
                     </div>
                 </div>
                 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2">
                     {paginatedStock.length === 0 && <p className="text-gray-400 text-center py-4">No se encontraron equipos en stock</p>}
                     {paginatedStock.map(s => (
                         <div key={s.id} className="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50">
@@ -1133,7 +1133,7 @@ function AdminTradeIn() {
                     </div>
                 </div>
                 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2">
                     {paginatedTradeIn.length === 0 && <p className="text-gray-400 text-center py-4">No se encontraron precios de toma</p>}
                     {paginatedTradeIn.map(s => (
                         <div key={s.id} className="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50">
@@ -1259,11 +1259,43 @@ function AdminFinance() {
         }
     };
 
+    const handleEditCard = async (card_name: string, currentFactor: number) => {
+        const val = prompt(`Nuevo coeficiente base para ${card_name}`, String(currentFactor));
+        if (val === null) return;
+        const newFactor = Number(val);
+        if (isNaN(newFactor)) return alert("Debe ser un número válido");
+
+        try {
+            await fetch(`${API_URL}/cards/${card_name}`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ base_factor: newFactor })
+            });
+            await refreshData();
+        } catch (e) { alert("Error al actualizar"); }
+    };
+
     const removePlan = async (id: string) => {
         if (confirm("¿Estás seguro de eliminar este plan?")) {
             await fetch(`${API_URL}/plans/${id}`, { method: 'DELETE', headers: authHeaders() });
             await refreshData();
         }
+    };
+
+    const handleEditPlan = async (id: string, currentInst: number, currentCoeff: number) => {
+        const val = prompt(`Nuevo coeficiente para el plan de ${currentInst} cuotas`, String(currentCoeff));
+        if (val === null) return;
+        const newCoeff = Number(val);
+        if (isNaN(newCoeff)) return alert("Debe ser un número válido");
+
+        try {
+            await fetch(`${API_URL}/plans/${id}`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ installments: currentInst, surcharge_coefficient: newCoeff })
+            });
+            await refreshData();
+        } catch (e) { alert("Error al actualizar"); }
     };
 
     return (
@@ -1286,7 +1318,10 @@ function AdminFinance() {
                                 <h3 className="font-bold text-lg">{c.card_name}</h3>
                                 <p className="text-xs text-gray-500">Base factor: {c.base_factor}</p>
                             </div>
-                            <button onClick={() => removeCard(c.card_name)} className="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100"><Trash2 className="w-5 h-5" /></button>
+                            <div className="flex gap-2">
+                                <button onClick={() => handleEditCard(c.card_name, c.base_factor)} className="text-blue-500 bg-blue-50 p-2 rounded hover:bg-blue-100" title="Editar Factor"><Pencil className="w-5 h-5" /></button>
+                                <button onClick={() => removeCard(c.card_name)} className="text-red-500 bg-red-50 p-2 rounded hover:bg-red-100" title="Eliminar"><Trash2 className="w-5 h-5" /></button>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-2 mb-4">
@@ -1295,6 +1330,7 @@ function AdminFinance() {
                                     <span className="font-medium">{p.installments} Cuotas</span>
                                     <div className="flex items-center gap-3">
                                         <span className="text-sm font-bold text-blue-600">x{p.surcharge_coefficient}</span>
+                                        <button onClick={() => handleEditPlan(p.id, p.installments, p.surcharge_coefficient)} className="text-blue-400 hover:text-blue-600"><Pencil className="w-4 h-4" /></button>
                                         <button onClick={() => removePlan(p.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 </div>

@@ -344,6 +344,19 @@ app.delete('/api/cards/:id', authenticateToken, async (req, res) => {
     await prisma.financingCard.delete({ where: { card_name: req.params.id } });
     res.json({ success: true });
 });
+app.put('/api/cards/:id', authenticateToken, async (req, res) => {
+    try {
+        await prisma.financingCard.update({
+            where: { card_name: req.params.id },
+            data: {
+                base_factor: Number(req.body.base_factor)
+            }
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update card' });
+    }
+});
 
 app.post('/api/plans', authenticateToken, async (req, res) => {
     try {
@@ -363,6 +376,20 @@ app.post('/api/plans', authenticateToken, async (req, res) => {
 app.delete('/api/plans/:id', authenticateToken, async (req, res) => {
     await prisma.financingPlan.delete({ where: { id: req.params.id } });
     res.json({ success: true });
+});
+app.put('/api/plans/:id', authenticateToken, async (req, res) => {
+    try {
+        await prisma.financingPlan.update({
+            where: { id: req.params.id },
+            data: {
+                installments: Number(req.body.installments),
+                surcharge_coefficient: Number(req.body.surcharge_coefficient)
+            }
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update plan' });
+    }
 });
 
 // Gallery CRUD
